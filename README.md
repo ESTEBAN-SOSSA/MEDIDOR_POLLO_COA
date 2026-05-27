@@ -158,5 +158,10 @@ src/
 
 - **Full refresh, no upsert**: Day/Month se borran e insertan completos por planta;
   Hour borra/inserta por día (24 filas, incluso nocturnas en 0).
+- **Retención de Hour**: cada sync poda el Hour más viejo que `HOUR_RETENTION_DAYS`
+  (default **180** días). **Day/Month nunca se podan** — histórico indefinido en
+  Postgres como serie de tiempo. `HOUR_RETENTION_DAYS=0` desactiva la poda. El Hour
+  de fechas viejas se re-extrae on-demand con `src.scraper.hourly` cuando se necesite
+  (y volverá a podarse en el siguiente sync diario).
 - **Snapshots**: ante un fallo de login/selector se guardan `snapshots/*.{html,png}`.
 - **Extender a más plantas**: agrega IDs a `TARGET_PLANT_IDS` en `.env`.
