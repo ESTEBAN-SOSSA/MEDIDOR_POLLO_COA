@@ -39,6 +39,9 @@ class Settings:
         default_factory=lambda: _csv(os.getenv("TARGET_PLANT_IDS", "1878757"))
     )
     hourly_days_back: int = int(os.getenv("HOURLY_DAYS_BACK", "7"))
+    # Retención de la curva Hour (5-min): el sync borra Hour más viejo que N días.
+    # Day/Month NO se podan (histórico indefinido). 0 ⇒ retención desactivada.
+    hour_retention_days: int = int(os.getenv("HOUR_RETENTION_DAYS", "180"))
     snapshot_dir: str = os.getenv("SNAPSHOT_DIR", "snapshots")
     nav_timeout_ms: int = int(os.getenv("NAV_TIMEOUT_MS", "60000"))
 
