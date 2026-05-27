@@ -1,0 +1,26 @@
+# Secrets / entorno
+.env
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Scraper
+snapshots/
+*.db
+*.sqlite3
+
+# Node (solo por playwright local, si aplica)
+node_modules/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

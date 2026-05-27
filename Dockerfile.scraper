@@ -1,0 +1,16 @@
+# Imagen oficial de Playwright (Python) con los navegadores ya instalados.
+FROM mcr.microsoft.com/playwright/python:v1.49.1-jammy
+
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && python -m playwright install chromium
+
+COPY src ./src
+
+# Por defecto: scheduler (sync diario 03:00). Para un sync puntual:
+#   docker compose exec scraper python -m src.scraper.main
+CMD ["python", "-m", "src.scraper.scheduler"]
