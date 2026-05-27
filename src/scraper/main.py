@@ -26,6 +26,7 @@ from src.scraper.plant_energy import (
     open_server_session,
     persist_plant,
     persist_plant_hourly,
+    prune_hourly,
     upsert_plant,
 )
 
@@ -103,6 +104,9 @@ async def run_plant_energy_sync(hourly_days_back: int | None = None) -> dict:
                             day = today - timedelta(days=back)
                             hourly = await fetch_plant_hourly_for_date(sp, pid, day)
                             readings_synced += persist_plant_hourly(session, pid, day, hourly)
+
+                        # Retención: poda Hour más viejo que HOUR_RETENTION_DAYS.
+                        prune_hourly(session, pid, settings.hour_retention_days)
 
                         session.commit()
                         plants_synced += 1

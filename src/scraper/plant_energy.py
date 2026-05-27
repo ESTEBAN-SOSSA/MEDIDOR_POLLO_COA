@@ -24,7 +24,7 @@ import json
 import logging
 import re
 from calendar import monthrange
-from datetime import date
+from datetime import date, timedelta
 
 from playwright.async_api import Page
 from sqlalchemy import delete
@@ -306,6 +306,29 @@ def persist_plant(session: Session, plant_id: str, history: dict) -> tuple[int, 
 
     session.flush()
     return days_inserted, months_inserted
+
+
+def prune_hourly(session: Session, plant_id: str, retention_days: int) -> int:
+    """Borra Hour de la planta más viejo que `retention_days` días.
+
+    Day/Month NUNCA se podan (histórico indefinido). `retention_days <= 0`
+    desactiva la poda. Devuelve el nº de filas Hour eliminadas.
+    """
+    if retention_days <= 0:
+        return 0
+    cutoff = date.today() - timedelta(days=retention_days)
+    result = session.execute(
+        delete(EnergyReading).where(
+            EnergyReading.plant_id == plant_id,
+            EnergyReading.granularity == "hour",
+            EnergyReading.reading_date < cutoff,
+        )
+    )
+    session.flush()
+    deleted = result.rowcount or 0
+    if deleted:
+        log.info("Poda Hour planta %s: %d filas < %s eliminadas", plant_id, deleted, cutoff)
+    return deleted
 
 
 def persist_plant_hourly(session: Session, plant_id: str, day: date, hourly: dict[int, dict]) -> int:
