@@ -189,3 +189,37 @@ def test_granularidad_invalida(db_y_cliente):
 def test_exige_api_key(db_y_cliente):
     _, cliente = db_y_cliente
     assert cliente.get(RUTA, params={"granularity": "hour"}).status_code == 401
+
+
+def test_un_dia_sin_detalle_del_portal_no_sale(db_y_cliente):
+    """El portal guarda la curva ~3 meses; pedida después llegan 288 ceros.
+
+    Con energía en el total diario, esas horas en cero no son un dato.
+    """
+    Sesion, cliente = db_y_cliente
+    ayer = _ayer()
+    with Sesion() as s:
+        for h in range(24):
+            s.add(
+                EnergyReading(
+                    plant_id=PLANTA,
+                    reading_date=ayer,
+                    granularity="hour",
+                    reading_hour=h,
+                    energy_kwh=0.0,
+                    raw={"samples_5min_w": [0.0] * 12},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        s.add(
+            EnergyReading(
+                plant_id=PLANTA,
+                reading_date=ayer,
+                granularity="day",
+                reading_hour=NON_HOURLY,
+                energy_kwh=2500.0,
+            )
+        )
+        s.commit()
+    for g in ("hour", "interval"):
+        assert cliente.get(RUTA, params={"granularity": g}, headers=HEADERS).json()["count"] == 0

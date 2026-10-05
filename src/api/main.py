@@ -235,16 +235,15 @@ def _fine_series(
         by_day[r.reading_date].append(r)
 
     daily_totals: dict[date, float] = {}
-    if ajustar_al_total_diario:
-        for d in db.execute(
-            select(EnergyReading).where(
-                EnergyReading.plant_id == plant_id,
-                EnergyReading.granularity == "day",
-                EnergyReading.reading_date >= date_from,
-                EnergyReading.reading_date <= date_to,
-            )
-        ).scalars():
-            daily_totals[d.reading_date] = d.energy_kwh
+    for d in db.execute(
+        select(EnergyReading).where(
+            EnergyReading.plant_id == plant_id,
+            EnergyReading.granularity == "day",
+            EnergyReading.reading_date >= date_from,
+            EnergyReading.reading_date <= date_to,
+        )
+    ).scalars():
+        daily_totals[d.reading_date] = d.energy_kwh
 
     series: list[dict] = []
     for day in sorted(by_day):
@@ -252,6 +251,11 @@ def _fine_series(
         hours = by_day[day]
         # Día cerrado: TODAS sus filas Hour se capturaron después de que terminó.
         if any((_aware(h.created_at) or day_end) < day_end for h in hours):
+            continue
+        # Día SIN detalle: el portal sólo guarda la curva de 5 min unos ~3 meses;
+        # pedida después devuelve 288 ceros. Si el día generó energía (total
+        # diario > 0) y sus horas suman 0, esas horas no son un dato: no salen.
+        if sum(h.energy_kwh for h in hours) <= 0 and (daily_totals.get(day) or 0) > 0:
             continue
 
         # (inicio, kWh, pico W) de cada intervalo del día.
